@@ -13,6 +13,7 @@ from pydantic import BaseSettings
 class Settings(BaseSettings):
     source_url: str = 'https://habr.com/ru/'
     local_url: str = 'http://0.0.0.0:8000/'
+    word_len: int = 6
 
     class Config:
         env_file = 'config.env'
@@ -46,7 +47,7 @@ def replace_link(link: str):
 
 def can_be_replaced(word: str) -> bool:
     list_of_exception_characters = ('.', ',', '!', '?', '™')
-    if len(word) != 6:
+    if len(word) != settings.word_len:
         return False
     for char in list_of_exception_characters:
         if char in word:
