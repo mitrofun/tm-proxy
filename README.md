@@ -1,4 +1,6 @@
 # TM-proxy
+[![Build Status](https://www.travis-ci.com/mitrofun/tm-proxy.svg?branch=master)](https://www.travis-ci.com/mitrofun/tm-proxy)
+
 Proxy website adds trademark char every word with length is 6
 
 ## Requirements:
