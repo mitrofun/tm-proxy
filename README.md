@@ -15,9 +15,8 @@ more dependencies in file `requirements.txt` or `pyproject.toml`
 
 1. Clone repository
 ```
-git clone
+git clone https://github.com/mitrofun/tm-proxy.git
 ```
-
 2. Create virtual environment
 ```
 cd tm-proxy
