@@ -2,7 +2,7 @@ from typing import Union
 
 import httpx
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, Header, HTTPException, status
 from fastapi.responses import Response
 
 from config import settings
@@ -26,7 +26,7 @@ async def fetch_data(url: str) -> httpx.Response:
         )
 
 
-async def get_content(url) -> tuple[Union[str, bytes], str]:
+async def get_content(url: str) -> tuple[Union[str, bytes], str]:
     prefix = settings.source_url
     data = await fetch_data(f'{prefix}{url}')
 
@@ -47,6 +47,7 @@ app = FastAPI(
 
 
 @app.get('/{url:path}')
-async def proxy(url: str):
+async def proxy(url: str, host: str = Header(None)):
+    settings.host = host
     content, media_type = await get_content(url)
-    return Response(content=content, media_type=media_type)
+    return Response(content=content, media_type=media_type, headers={'host': host})
