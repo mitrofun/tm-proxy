@@ -18,7 +18,8 @@ RUN apk update && apk add --update --no-cache --progress \
 
 WORKDIR /app
 
-COPY main.py requirements.txt ./
+# for minimize file in docker image
+COPY main.py config.py patcher.py requirements.txt ./
 
 RUN pip install -U pip && pip install --no-cache-dir -r /app/requirements.txt
 

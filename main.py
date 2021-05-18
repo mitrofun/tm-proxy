@@ -2,31 +2,18 @@ from typing import Union
 
 import httpx
 
-from bs4 import BeautifulSoup  # type: ignore
-from bs4.element import Doctype, NavigableString  # type: ignore
-
 from fastapi import FastAPI, HTTPException, status
-from fastapi.responses import HTMLResponse
-from pydantic import BaseSettings
+from fastapi.responses import Response
+
+from config import settings
+from patcher import modify_html
 
 
-class Settings(BaseSettings):
-    source_url: str = 'https://habr.com/ru/'
-    local_url: str = 'http://0.0.0.0:8000/'
-    word_len: int = 6
-
-    class Config:
-        env_file = 'config.env'
-
-
-settings = Settings()
-
-
-async def fetch_content(url: str) -> str:
+async def fetch_data(url: str) -> httpx.Response:
     try:
         async with httpx.AsyncClient() as client:
-            r = await client.get(url)
-            return r.text
+            res: httpx.Response = await client.get(url)
+            return res
     except httpx.ConnectTimeout:
         raise HTTPException(
             status_code=status.HTTP_408_REQUEST_TIMEOUT,
@@ -39,63 +26,16 @@ async def fetch_content(url: str) -> str:
         )
 
 
-def replace_link(link: str):
-    if not link:
-        return
-    return link.replace(settings.source_url, settings.local_url)
-
-
-def can_be_replaced(word: str) -> bool:
-    list_of_exception_characters = ('.', ',', '!', '?', '™')
-    if len(word) != settings.word_len:
-        return False
-    for char in list_of_exception_characters:
-        if char in word:
-            return False
-    return True
-
-
-def replace_word(word: str) -> str:
-    if not can_be_replaced(word):
-        return word
-    return f'{word}™'
-
-
-def update_string(string: str) -> str:
-    words: list = string.split(' ')
-
-    for index, word in enumerate(words):
-        words[index] = replace_word(word)
-
-    return ' '.join(words)
-
-
-async def update_text(node: Union[NavigableString, Doctype]) -> None:
-
-    if type(node) == Doctype:
-        return
-    if node.name == 'a':
-        node.attrs['href'] = replace_link(node.attrs.get('href'))
-    if node.string:
-        node.string.replace_with(update_string(string=node.string))
-
-    if hasattr(node, 'children'):
-        for child in node.children:
-            await update_text(child)
-
-
-async def update_html(text_page: str) -> str:
-    soup = BeautifulSoup(text_page, 'html.parser')
-    for node in soup.children:
-        await update_text(node)
-    return str(soup)
-
-
-async def get_content(url) -> str:
+async def get_content(url) -> tuple[Union[str, bytes], str]:
     prefix = settings.source_url
-    text_page = await fetch_content(f'{prefix}{url}')
-    updated_text = await update_html(text_page)
-    return updated_text
+    data = await fetch_data(f'{prefix}{url}')
+
+    # Modify only html
+    if 'text/html' in data.headers.get('content-type'):
+        updated_text = await modify_html(data.content)
+        return updated_text, data.headers.get('content-type')
+
+    return data.content, data.headers.get('content-type')
 
 
 app = FastAPI(
@@ -106,7 +46,7 @@ app = FastAPI(
 )
 
 
-@app.get('/{url:path}', response_class=HTMLResponse)
-async def proxy_pages(url: str):
-    content = await get_content(url)
-    return content
+@app.get('/{url:path}')
+async def proxy(url: str):
+    content, media_type = await get_content(url)
+    return Response(content=content, media_type=media_type)
