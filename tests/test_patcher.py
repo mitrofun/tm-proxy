@@ -1,5 +1,5 @@
 import pytest
-from main import patch_word, can_be_replaced, modify_string, modify_html
+from patcher import patch_word, can_be_replaced, modify_string, modify_html
 
 
 @pytest.fixture()

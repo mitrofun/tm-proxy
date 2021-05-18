@@ -6,7 +6,7 @@ run:
 # target: lint - Run linters flake8 and mypy
 lint:
 	flake8 . --count
-	mypy main.py
+	mypy .
 
 # target: qa - Run test
 qa:
