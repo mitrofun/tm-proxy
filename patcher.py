@@ -1,37 +1,35 @@
-import re
+# import re
 from typing import Union
 
 from bs4 import BeautifulSoup  # type: ignore
 from bs4.element import NavigableString, Tag  # type: ignore
 
+from nltk.tokenize import regexp_tokenize  # type: ignore
+
 from config import settings
 
-ignore_tags = ('script', 'style', 'html')
+ignore_tags = ('script', 'style')
 
 
 def replace_url(link: str):
     if not link:
         return
-    return link.replace(settings.source_url, settings.local_url)
-
-
-def can_be_replaced(word: str) -> bool:
-    if '\n' in word or len(word) != settings.word_len:
-        return False
-    return True
+    return link.replace(settings.source_url, f'http://{settings.host}/')
 
 
 def patch_word(word: str) -> str:
-    if not can_be_replaced(word):
-        return word
-    return f'{word}™'
+    return f'{word}™' if len(word) == settings.word_len else word
 
 
 def modify_string(text: str) -> str:
-    words = re.split(r'(\W+)', text)
-    for index, word in enumerate(words):
-        words[index] = patch_word(word)
-    return ''.join(words)
+    # ((( hack
+    if '™™' in text:
+        return text.replace('™™', '™')
+
+    words = list(set(regexp_tokenize(text, pattern=r'\w+|\$[\d\.]+|\S+')))
+    for word in words:
+        text = text.replace(word, patch_word(word))
+    return text
 
 
 def modify_link(tag) -> None:
@@ -48,23 +46,16 @@ def modify_link(tag) -> None:
 
 def modify_tag(tag: Union[Tag, NavigableString]) -> None:
 
-    if tag.name in ignore_tags:
-        return
-
-    modify_link(tag)
-
-    if tag.string and tag.children:
-
-        for child_tag in tag.children:
-            try:
-                modify_tag(child_tag)
-            # NavigableString objects have no attributes; only Tag objects have them.
-            except AttributeError:
-                child_tag.parent.string = modify_string(child_tag)
+    for child_tag in tag.children:
+        if isinstance(child_tag, NavigableString):
+            child_tag.string.replace_with(modify_string(str(child_tag)))
 
 
 async def modify_html(html_content: bytes) -> str:
     soup = BeautifulSoup(html_content, 'html5lib')
-    for tag in soup.find_all(name=True):
-        modify_tag(tag)
+    for tag in soup.find_all():
+        if tag.name not in ignore_tags:
+            modify_tag(tag)
+        if tag.name in ('a', 'use'):
+            modify_link(tag)
     return str(soup)

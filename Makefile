@@ -1,7 +1,7 @@
 # target: run - Run server
 run:
 	echo "Run develop server"
-	uvicorn main:app --reload
+	uvicorn main:app --host 0.0.0.0 --reload
 
 # target: lint - Run linters flake8 and mypy
 lint:
