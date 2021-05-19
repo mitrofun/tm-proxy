@@ -23,7 +23,7 @@ def html() -> str:
                 </ul>
                 <div>
                     <a href="http://erlang.org/pipermail/erlang-questions/2008-October/039176.html">
-                    erlang™.org/pipermail/erlang™-questions/2008-October/039176™.html</a>
+                    erlang.org/pipermail/erlang-questions/2008-October/039176.html</a>
                 </div>
             </body>
         </html>
@@ -73,7 +73,7 @@ async def test_modify_text_in_html(html):
     assert '<title>Header™</title>' in html_text
     assert 'Debian™™' not in html_text
     assert 'Другие™ старые™ устройства' in html_text
-    assert 'erlang™.org/pipermail/erlang™-questions/2008-October/039176™.html' in html_text
+    assert 'erlang™.org/pipermail/erlang™-questions/2008-October/039176.html' in html_text
 
 
 @pytest.mark.asyncio

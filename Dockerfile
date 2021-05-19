@@ -12,6 +12,8 @@ ENV PYTHONFAULTHANDLER=1 \
 RUN apk update && apk add --update --no-cache --progress \
   bash \
   tini \
+  gcc \
+  musl-dev \
   && rm -rf \
     /var/cache/apk/* \
     /root/.cache
